@@ -656,6 +656,11 @@ Windows), otherwise
 `squeez setup --host=hermes` will not detect it. Directory plugins are opt-in;
 enable it once with `hermes plugins enable squeez-fallback`.
 
+The plugin uses Hermes's `transform_terminal_output` hook: the command runs
+unchanged and its output goes through `squeez filter`, so piped and chained
+commands are compressed too. The full output is saved, redacted, and the
+compressed text ends with its path. See `plugins/hermes/README.md`.
+
 ### GitHub Copilot CLI
 
 Hooks registered in `~/.copilot/settings.json`. Session memory written to `~/.copilot/copilot-instructions.md` (Copilot CLI reads this automatically). State stored separately at `~/.copilot/squeez/`.
