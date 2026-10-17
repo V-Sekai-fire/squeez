@@ -10,7 +10,10 @@ The plugin hooks transform_terminal_output and passes the output of every
 terminal command through `squeez filter`. The command itself is not
 rewritten, so piped and chained commands are compressed too. The full
 output is saved, redacted, and the compressed text ends with its path. Set
-SQUEEZ_OUTPUT_DISABLE=1 to leave output as is.
+SQUEEZ_OUTPUT_DISABLE=1 to leave output as is. Commands another plugin has
+already rewritten are skipped so the first wrapper keeps priority -- set
+SQUEEZ_HERMES_NEVER_WRAP to a comma-separated list of prefixes to declare
+those, e.g. SQUEEZ_HERMES_NEVER_WRAP="foo ,bar ".
 
 Requires: squeez binary in PATH (cargo install squeez or npm install -g squeez)
 or at $SQUEEZ_BIN
@@ -29,6 +32,27 @@ from pathlib import Path
 _MIN_SAVING = 0.20
 _TIMEOUT_S = 10
 _KEEP_RAW_S = 24 * 3600
+
+# Commands whose output is never compressed (shell builtins such as cd and
+# export needed skipping only while commands were wrapped)
+_NEVER_WRAP = (
+    "squeez ",       # already squeez-handled (prevents double-wrap)
+    "--no-squeez ",  # explicit bypass prefix
+    "hermes ",       # Hermes CLI commands — avoid recursion
+)
+
+
+def _never_wrap_prefixes():
+    """_NEVER_WRAP plus any prefixes declared in SQUEEZ_HERMES_NEVER_WRAP.
+
+    Another Hermes plugin may rewrite a command before this hook runs;
+    compressing its output again would double-compress it. Which prefixes those
+    are depends on what else the user has installed, so they are declared
+    rather than guessed.
+    """
+    extra = os.environ.get("SQUEEZ_HERMES_NEVER_WRAP", "")
+    declared = tuple(p for p in (part.strip() for part in extra.split(",")) if p)
+    return _NEVER_WRAP + declared
 
 
 def register(ctx):
@@ -106,8 +130,8 @@ def compress(command: object, output: object) -> str | None:
         return None
     if not isinstance(output, str) or len(output) < _min_chars():
         return None
-    # Skip if squeez already handled the output
-    if not isinstance(command, str) or command.lstrip().startswith("squeez"):
+    # Skip if already wrapped or shouldn't be wrapped
+    if not isinstance(command, str) or command.strip().startswith(_never_wrap_prefixes()):
         return None
     exe = _squeez_bin()
     if not exe:

@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.getcwd())
-from hermes_cli.plugins import get_plugin_manager
+from hermes_cli.plugins import discover_plugins, get_plugin_manager
 from tools.terminal_tool import terminal_tool
 
 PLUGIN = Path(__file__).resolve().parent.parent / "__init__.py"
@@ -37,8 +37,9 @@ def check(name, cond, detail=""):
         fails.append(name)
 
 
+discover_plugins()
 hooks = get_plugin_manager()._hooks.setdefault("transform_terminal_output", [])
-hooks[:] = [h for h in hooks if getattr(h, "__module__", "") != "squeez_output"]
+hooks.clear()
 
 raw = run(BIG)
 check("control: no plugin -> raw output", "[squeez:" not in raw, f"len={len(raw)}")
@@ -67,6 +68,11 @@ real_bin, mod._squeez_bin = mod._squeez_bin, lambda: None
 nb = run(BIG)
 check("no binary: unchanged", "[squeez:" not in nb and len(nb) >= len(raw) * 0.9, f"len={len(nb)}")
 mod._squeez_bin = real_bin
+
+os.environ["SQUEEZ_HERMES_NEVER_WRAP"] = "cd "
+nw = run(BIG)
+check("declared prefix: unchanged", "[squeez:" not in nw and len(nw) >= len(raw) * 0.9, f"len={len(nw)}")
+del os.environ["SQUEEZ_HERMES_NEVER_WRAP"]
 
 s = run(SECRET)
 m = re.search(r"Full output: (\S+)", s)
