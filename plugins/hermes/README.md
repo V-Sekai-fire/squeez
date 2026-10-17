@@ -42,13 +42,14 @@ The plugin leaves the output unchanged when:
 
 - the output is shorter than `SQUEEZ_OUTPUT_MIN_CHARS` (default 4000)
 - squeez saves less than 20%
-- the squeez binary fails or takes more than 10 s
+- the squeez binary is missing, fails, or takes more than 10 s
 - `SQUEEZ_OUTPUT_DISABLE=1` is set
 
 The plugin looks for the squeez binary at `$SQUEEZ_BIN`, then on `PATH`,
 then at `$HERMES_HOME/squeez/bin/squeez`, then at
-`~/.claude/squeez/bin/squeez` (where `install.sh` puts it). When it finds
-none, it does not register the hook.
+`~/.claude/squeez/bin/squeez` (where `install.sh` puts it). It looks on
+every call, so when it finds none the output is left as is, and a binary
+installed later works without a restart.
 
 ## Test
 

@@ -17,8 +17,7 @@ _KEEP_RAW_S = 24 * 3600
 
 def register(ctx):
     if not _squeez_bin():
-        _warn("squeez binary not found; Hermes hook not registered")
-        return
+        _warn("squeez binary not found; output is left as is until it is installed")
     ctx.register_hook("transform_terminal_output", _transform_terminal_output)
 
 

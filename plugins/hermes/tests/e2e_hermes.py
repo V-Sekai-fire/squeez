@@ -63,6 +63,11 @@ d = run(BIG)
 check("disable: unchanged", "[squeez:" not in d and len(d) >= len(raw) * 0.9, f"len={len(d)}")
 del os.environ["SQUEEZ_OUTPUT_DISABLE"]
 
+real_bin, mod._squeez_bin = mod._squeez_bin, lambda: None
+nb = run(BIG)
+check("no binary: unchanged", "[squeez:" not in nb and len(nb) >= len(raw) * 0.9, f"len={len(nb)}")
+mod._squeez_bin = real_bin
+
 s = run(SECRET)
 m = re.search(r"Full output: (\S+)", s)
 if m:
