@@ -659,7 +659,12 @@ enable it once with `hermes plugins enable squeez-fallback`.
 The plugin uses Hermes's `transform_terminal_output` hook: the command runs
 unchanged and its output goes through `squeez filter`, so piped and chained
 commands are compressed too. The full output is saved, redacted, and the
-compressed text ends with its path. See `plugins/hermes/README.md`.
+compressed text ends with its path (`$HERMES_HOME/cache/squeez-raw/`, mode
+0600, pruned after 24 h). Output under `SQUEEZ_OUTPUT_MIN_CHARS` (default
+4000) is left as is, and `SQUEEZ_OUTPUT_DISABLE=1` turns the hook off. Set
+`SQUEEZ_BIN` if squeez is not on `PATH`. To test it through the real Hermes
+terminal tool, run `.venv/bin/python <squeez>/plugins/hermes/tests/e2e_hermes.py`
+from a hermes-agent checkout.
 
 ### GitHub Copilot CLI
 

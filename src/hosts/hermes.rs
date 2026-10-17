@@ -8,7 +8,9 @@
 //! discover it. Discovered plugins are opt-in and must be enabled once via
 //! `hermes plugins enable squeez-fallback`.
 //!
-//! The plugin filters terminal output in a hook; see plugins/hermes/README.md.
+//! Hermes fires a `transform_terminal_output` hook after every terminal
+//! command. The squeez plugin compresses that output with `squeez filter`,
+//! where Claude Code's PreToolUse hook rewrites the command instead.
 //!
 //! Capability ceiling: `BASH_WRAP | SESSION_MEM`.
 //! Hermes does not expose programmatic Read/Grep budget injection — the
@@ -119,6 +121,7 @@ impl HostAdapter for HermesAdapter {
     }
 
     fn capabilities(&self) -> HostCaps {
+        // Hermes has transform_terminal_output (BASH_WRAP) and session start (SESSION_MEM).
         // No programmatic Read/Grep budget injection (BUDGET_HARD) or soft
         // budget hints via markdown (BUDGET_SOFT).
         HostCaps::BASH_WRAP | HostCaps::SESSION_MEM

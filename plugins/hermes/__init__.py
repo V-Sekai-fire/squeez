@@ -1,4 +1,20 @@
-"""Hermes plugin: compress large terminal output with `squeez filter`; see README.md."""
+"""Hermes plugin adapter for squeez output compression.
+
+When installed via `squeez setup --host=hermes`, this plugin is dropped into
+$HERMES_HOME/plugins/squeez-fallback/__init__.py, defaulting to ~/.hermes when
+that variable is unset. Hermes discovers plugins on session start, but
+directory plugins are opt-in: enable it once with
+`hermes plugins enable squeez-fallback`.
+
+The plugin hooks transform_terminal_output and passes the output of every
+terminal command through `squeez filter`. The command itself is not
+rewritten, so piped and chained commands are compressed too. The full
+output is saved, redacted, and the compressed text ends with its path. Set
+SQUEEZ_OUTPUT_DISABLE=1 to leave output as is.
+
+Requires: squeez binary in PATH (cargo install squeez or npm install -g squeez)
+or at $SQUEEZ_BIN
+"""
 
 from __future__ import annotations
 
@@ -16,6 +32,7 @@ _KEEP_RAW_S = 24 * 3600
 
 
 def register(ctx):
+    """Register the Hermes output callback."""
     if not _squeez_bin():
         _warn("squeez binary not found; output is left as is until it is installed")
     ctx.register_hook("transform_terminal_output", _transform_terminal_output)
@@ -30,6 +47,7 @@ def _hermes_home() -> Path:
 
 
 def _squeez_bin() -> str | None:
+    """Return the squeez binary path, or None when it is missing."""
     for cand in (os.environ.get("SQUEEZ_BIN"), shutil.which("squeez"),
                  str(_hermes_home() / "squeez" / "bin" / "squeez"),
                  str(Path.home() / ".claude" / "squeez" / "bin" / "squeez")):
@@ -88,6 +106,7 @@ def compress(command: object, output: object) -> str | None:
         return None
     if not isinstance(output, str) or len(output) < _min_chars():
         return None
+    # Skip if squeez already handled the output
     if not isinstance(command, str) or command.lstrip().startswith("squeez"):
         return None
     exe = _squeez_bin()
@@ -95,6 +114,8 @@ def compress(command: object, output: object) -> str | None:
         return None
     env = dict(os.environ)
     env.setdefault("SQUEEZ_DIR", str(_hermes_home() / "squeez"))
+    # Filter with squeez — squeez filter picks the handler for the command
+    # (a user filter rule first, else the built-in one) and compresses stdin
     proc = subprocess.run([exe, "filter", command], input=output, capture_output=True,
                           text=True, errors="replace", timeout=_TIMEOUT_S, env=env)
     small = proc.stdout.rstrip("\n")
@@ -108,6 +129,7 @@ def compress(command: object, output: object) -> str | None:
 
 
 def _transform_terminal_output(command=None, output=None, **_kw):
+    """Compress a terminal command's output with squeez, or leave it as is."""
     try:
         return compress(command, output)
     except Exception as exc:  # fail open: the model gets the raw output
