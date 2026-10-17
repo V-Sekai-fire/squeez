@@ -1,4 +1,4 @@
-"""Run from a hermes-agent checkout: .venv/bin/python <this file>; see ../README.md."""
+"""Run from a hermes-agent checkout: .venv/bin/python <this file>."""
 import importlib.util
 import json
 import os
